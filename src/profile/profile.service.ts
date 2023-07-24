@@ -64,4 +64,44 @@ export class ProfileService {
 
     return { profile: formattedFollowing };
   }
+
+  async unFollowUser(username: string, userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        following: true,
+      },
+    });
+
+    const followingUser = user.following.find(
+      (user) => user.username === username,
+    );
+    if (!followingUser) {
+      throw new ForbiddenException('User not in the following list');
+    }
+
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        following: {
+          disconnect: {
+            id: followingUser.id,
+          },
+        },
+      },
+    });
+
+    const formattedFollowing = {
+      username: followingUser.username,
+      bio: followingUser.bio,
+      image: followingUser.image,
+      following: false,
+    };
+
+    return { profile: formattedFollowing };
+  }
 }

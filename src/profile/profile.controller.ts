@@ -31,4 +31,14 @@ export class ProfileController {
   ) {
     return this.profileService.followUser(username, userId);
   }
+
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
+  @Delete(':username/follow')
+  unFollowUser(
+    @Param('username') username: string,
+    @GetUser('id') userId: number,
+  ) {
+    return this.profileService.unFollowUser(username, userId);
+  }
 }
