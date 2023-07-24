@@ -16,19 +16,32 @@ export class ProfileService {
   }
 
   async followUser(username: string, userId: number) {
-    const following = await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        following: true,
+      },
+    });
+
+    const followingUser = user.following.find(
+      (user) => user.username === username,
+    );
+    if (followingUser) {
+      throw new ForbiddenException('already following the user!!');
+    }
+
+    const userToFollow = await this.prisma.user.findUnique({
       where: {
         username,
       },
     });
 
-    if (!following) {
-      throw new ForbiddenException('can not find user to follow');
+    if (!userToFollow) {
+      throw new ForbiddenException('User not found');
     }
 
-    if (following.id === userId) {
-      throw new ForbiddenException('can not follow userself');
-    }
     await this.prisma.user.update({
       where: {
         id: userId,
@@ -36,16 +49,16 @@ export class ProfileService {
       data: {
         following: {
           connect: {
-            id: following.id,
+            id: userToFollow.id,
           },
         },
       },
     });
 
     const formattedFollowing = {
-      username: following.username,
-      bio: following.bio,
-      image: following.image,
+      username: userToFollow.username,
+      bio: userToFollow.bio,
+      image: userToFollow.image,
       following: true,
     };
 
