@@ -211,6 +211,13 @@ export class ArticleService {
   }
 
   async addComment(dto: CreateCommentDto, slug: string, userId: number) {
+    const article = await this.prisma.article.findUnique({
+      where: {
+        slug,
+      },
+    });
+    if (!article) throw new ForbiddenException('Cannot find the article!!');
+
     const comment = await this.prisma.comment.create({
       data: {
         body: dto.body,
@@ -240,5 +247,45 @@ export class ArticleService {
       author: formattedAuthor,
     };
     return { comment: formattedData };
+  }
+
+  async getComments(slug: string) {
+    const article = await this.prisma.article.findUnique({
+      where: {
+        slug,
+      },
+    });
+    if (!article) throw new ForbiddenException('Cannot find the article!!');
+
+    const comments = await this.prisma.comment.findMany({
+      where: {
+        article: { slug },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        author: true,
+      },
+    });
+
+    const formattedComments = comments.map((comment) => {
+      const formattedAuthor = {
+        username: comment.author.username,
+        bio: comment.author.bio,
+        image: comment.author.image,
+      };
+
+      const formattedData = {
+        id: comment.id,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+        body: comment.body,
+        author: formattedAuthor,
+      };
+
+      return formattedData;
+    });
+    return { comments: formattedComments };
   }
 }

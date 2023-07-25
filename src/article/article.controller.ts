@@ -61,4 +61,9 @@ export class ArticleController {
   ) {
     return this.articleService.addComment(dto, slug, userId);
   }
+
+  @Get(':slug/comments')
+  getComments(@Param('slug') slug: string) {
+    return this.articleService.getComments(slug);
+  }
 }
