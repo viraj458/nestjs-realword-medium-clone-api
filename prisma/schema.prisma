@@ -26,6 +26,7 @@ model User {
   following  User[] @relation("UserFollows")
 
   Article Article[]
+  Comment Comment[]
 }
 
 model Article {
@@ -40,11 +41,23 @@ model Article {
   tags        Tag[]
 
   authorId Int
-  author   User @relation(fields: [authorId], references: [id])
+  author   User      @relation(fields: [authorId], references: [id])
+  Comment  Comment[]
 }
 
 model Tag {
   id       Int       @id @default(autoincrement())
   name     String
   articles Article[]
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  body      String
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  articleId Int
+  article   Article  @relation(fields: [articleId], references: [id])
 }

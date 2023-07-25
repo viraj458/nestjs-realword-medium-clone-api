@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateArticleDto, UpdateArticleDto } from './dto';
+import { CreateArticleDto, CreateCommentDto, UpdateArticleDto } from './dto';
 import slugify from 'slugify';
 
 @Injectable()
@@ -71,7 +71,7 @@ export class ArticleService {
       slug: article.slug,
       title: article.title,
       description: article.description,
-      body: article.description,
+      body: article.body,
       tagList: article.tags,
       createdAt: article.createdAt,
       updatedAt: article.updatedAt,
@@ -208,5 +208,37 @@ export class ArticleService {
     };
 
     return { article: formattedData };
+  }
+
+  async addComment(dto: CreateCommentDto, slug: string, userId: number) {
+    const comment = await this.prisma.comment.create({
+      data: {
+        body: dto.body,
+        article: {
+          connect: { slug },
+        },
+        author: {
+          connect: { id: userId },
+        },
+      },
+      include: {
+        author: true,
+      },
+    });
+
+    const formattedAuthor = {
+      username: comment.author.username,
+      bio: comment.author.bio,
+      image: comment.author.image,
+    };
+
+    const formattedData = {
+      id: comment.id,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      body: comment.body,
+      author: formattedAuthor,
+    };
+    return { comment: formattedData };
   }
 }

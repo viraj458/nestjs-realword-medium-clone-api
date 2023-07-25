@@ -25,13 +25,6 @@ export class ProfileService {
       },
     });
 
-    const followingUser = user.following.find(
-      (user) => user.username === username,
-    );
-    if (followingUser) {
-      throw new ForbiddenException('already following the user!!');
-    }
-
     const userToFollow = await this.prisma.user.findUnique({
       where: {
         username,
@@ -40,6 +33,13 @@ export class ProfileService {
 
     if (!userToFollow) {
       throw new ForbiddenException('User not found');
+    }
+
+    const followingUser = user.following.find(
+      (user) => user.username === username,
+    );
+    if (followingUser) {
+      throw new ForbiddenException('already following the user!!');
     }
 
     await this.prisma.user.update({

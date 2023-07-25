@@ -11,7 +11,7 @@ import {
 import { ArticleService } from './article.service';
 import { JwtGuard } from '../auth/guard/jwt.guard';
 import { GetUser } from '../user/decorator';
-import { CreateArticleDto, UpdateArticleDto } from './dto';
+import { CreateArticleDto, CreateCommentDto, UpdateArticleDto } from './dto';
 
 @Controller('articles')
 export class ArticleController {
@@ -50,5 +50,15 @@ export class ArticleController {
     @Body('article') dto: UpdateArticleDto,
   ) {
     return this.articleService.updateArticle(slug, userId, dto);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post(':slug/comments')
+  addComment(
+    @Body('comment') dto: CreateCommentDto,
+    @Param('slug') slug: string,
+    @GetUser('id') userId: number,
+  ) {
+    return this.articleService.addComment(dto, slug, userId);
   }
 }
