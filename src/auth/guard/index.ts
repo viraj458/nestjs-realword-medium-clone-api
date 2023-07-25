@@ -1,2 +1,2 @@
 export * from './jwt.guard';
-export * from './jwt.optionalguard';
+export * from './jwt.optionalGuard';

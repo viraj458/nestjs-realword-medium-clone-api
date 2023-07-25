@@ -311,4 +311,64 @@ export class ArticleService {
 
     return 'Comment deleted!!';
   }
+
+  async favoriteArticle(slug: string, userId: number) {
+    const article = await this.prisma.article.findUnique({
+      where: {
+        slug,
+      },
+      include: {
+        favoritedBy: true,
+      },
+    });
+
+    if (!article) throw new ForbiddenException('Can not find article!');
+
+    const checkFavorite = article.favoritedBy.find(
+      (user) => user.id === userId,
+    );
+    if (checkFavorite) {
+      throw new ForbiddenException('Article already in favorites!!');
+    }
+    const favoritearticle = await this.prisma.article.update({
+      where: {
+        slug,
+      },
+      data: {
+        favoritedBy: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+      include: {
+        tags: true,
+        author: true,
+        favoritedBy: true,
+      },
+    });
+
+    const favoriteCount = favoritearticle.favoritedBy.length;
+
+    const formattedAuthor = {
+      username: favoritearticle.author.username,
+      bio: favoritearticle.author.bio,
+      image: favoritearticle.author.image,
+    };
+
+    const formattedData = {
+      slug: favoritearticle.slug,
+      title: favoritearticle.title,
+      description: favoritearticle.description,
+      body: favoritearticle.body,
+      tagList: favoritearticle.tags,
+      createdAt: favoritearticle.createdAt,
+      updatedAt: favoritearticle.updatedAt,
+      author: formattedAuthor,
+      favorited: true,
+      favoritesCount: favoriteCount,
+    };
+
+    return { article: formattedData };
+  }
 }

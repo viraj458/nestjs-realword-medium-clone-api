@@ -10,9 +10,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
-import { JwtGuard } from '../auth/guard/jwt.guard';
 import { GetUser } from '../user/decorator';
 import { CreateArticleDto, CreateCommentDto, UpdateArticleDto } from './dto';
+import { JwtGuard, OptionalAuthGuard } from '../auth/guard';
 
 @Controller('articles')
 export class ArticleController {
@@ -63,6 +63,7 @@ export class ArticleController {
     return this.articleService.addComment(dto, slug, userId);
   }
 
+  @UseGuards(OptionalAuthGuard)
   @Get(':slug/comments')
   getComments(@Param('slug') slug: string) {
     return this.articleService.getComments(slug);
@@ -75,5 +76,11 @@ export class ArticleController {
     @GetUser('id') userId: number,
   ) {
     return this.articleService.deleteComment(commentId, userId);
+  }
+
+  @UseGuards(JwtGuard)
+  @Post(':slug/favorite')
+  favoriteArticle(@Param('slug') slug: string, @GetUser('id') userId: number) {
+    return this.articleService.favoriteArticle(slug, userId);
   }
 }

@@ -12,7 +12,12 @@ export class ProfileService {
       },
     });
 
-    return { profile };
+    const formattedProfile = {
+      username: profile.username,
+      bio: profile.bio,
+      image: profile.image,
+    };
+    return { profile: formattedProfile };
   }
 
   async followUser(username: string, userId: number) {
