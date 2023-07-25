@@ -288,4 +288,27 @@ export class ArticleService {
     });
     return { comments: formattedComments };
   }
+
+  async deleteComment(commentId: number, userId: number) {
+    const comment = await this.prisma.comment.findUnique({
+      where: {
+        id: commentId,
+      },
+    });
+
+    if (!comment) throw new ForbiddenException('Cannot find the comment!!');
+
+    if (comment.authorId !== userId) {
+      throw new ForbiddenException(
+        'You are not authorized to delete this comment.',
+      );
+    }
+    await this.prisma.comment.delete({
+      where: {
+        id: commentId,
+      },
+    });
+
+    return 'Comment deleted!!';
+  }
 }

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   UseGuards,
@@ -65,5 +66,14 @@ export class ArticleController {
   @Get(':slug/comments')
   getComments(@Param('slug') slug: string) {
     return this.articleService.getComments(slug);
+  }
+
+  @UseGuards(JwtGuard)
+  @Delete(':slug/comments/:id')
+  deleteComment(
+    @Param('id', ParseIntPipe) commentId: number,
+    @GetUser('id') userId: number,
+  ) {
+    return this.articleService.deleteComment(commentId, userId);
   }
 }
