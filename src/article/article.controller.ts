@@ -83,4 +83,13 @@ export class ArticleController {
   favoriteArticle(@Param('slug') slug: string, @GetUser('id') userId: number) {
     return this.articleService.favoriteArticle(slug, userId);
   }
+
+  @UseGuards(JwtGuard)
+  @Delete(':slug/favorite')
+  unFavoriteArticle(
+    @Param('slug') slug: string,
+    @GetUser('id') userId: number,
+  ) {
+    return this.articleService.unFavoriteArticle(slug, userId);
+  }
 }

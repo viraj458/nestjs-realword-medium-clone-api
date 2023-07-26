@@ -371,4 +371,67 @@ export class ArticleService {
 
     return { article: formattedData };
   }
+
+  async unFavoriteArticle(slug: string, userId: number) {
+    const article = await this.prisma.article.findUnique({
+      where: {
+        slug,
+      },
+      include: {
+        favoritedBy: true,
+      },
+    });
+
+    if (!article) throw new ForbiddenException('Can not find article!');
+
+    const checkFavorite = article.favoritedBy.find(
+      (user) => user.id === userId,
+    );
+    if (!checkFavorite) {
+      throw new ForbiddenException(
+        'Can not find the article in your favorites!!',
+      );
+    }
+
+    const unFavoritearticle = await this.prisma.article.update({
+      where: {
+        slug,
+      },
+      data: {
+        favoritedBy: {
+          disconnect: {
+            id: userId,
+          },
+        },
+      },
+      include: {
+        tags: true,
+        author: true,
+        favoritedBy: true,
+      },
+    });
+
+    const favoriteCount = unFavoritearticle.favoritedBy.length;
+
+    const formattedAuthor = {
+      username: unFavoritearticle.author.username,
+      bio: unFavoritearticle.author.bio,
+      image: unFavoritearticle.author.image,
+    };
+
+    const formattedData = {
+      slug: unFavoritearticle.slug,
+      title: unFavoritearticle.title,
+      description: unFavoritearticle.description,
+      body: unFavoritearticle.body,
+      tagList: unFavoritearticle.tags,
+      createdAt: unFavoritearticle.createdAt,
+      updatedAt: unFavoritearticle.updatedAt,
+      author: formattedAuthor,
+      favorited: false,
+      favoritesCount: favoriteCount,
+    };
+
+    return { article: formattedData };
+  }
 }
