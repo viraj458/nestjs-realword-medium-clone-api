@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
@@ -27,14 +28,20 @@ export class ArticleController {
     return this.articleService.createArticle(userId, dto);
   }
 
+  @UseGuards(JwtGuard)
+  @Get('feed')
+  feedArticles(@GetUser('id') userId: number) {
+    return this.articleService.feedArticles(userId);
+  }
+
   @Get(':slug')
   getArticle(@Param('slug') slug: string) {
     return this.articleService.getArticle(slug);
   }
 
   @Get()
-  getArticles() {
-    return this.articleService.getArticles();
+  getArticles(@Query() query: any) {
+    return this.articleService.getArticles(query);
   }
 
   @UseGuards(JwtGuard)

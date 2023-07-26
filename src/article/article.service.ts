@@ -81,12 +81,47 @@ export class ArticleService {
     return { article: formattedData };
   }
 
-  async getArticles() {
+  async getArticles(query: any) {
+    const { tag, author, favorited, limit = 20, offset = 0 } = query;
+    const where = {};
+
+    // Filter by tag
+    if (tag) {
+      where['tags'] = {
+        some: {
+          name: tag,
+        },
+      };
+    }
+
+    // Filter by author
+    if (author) {
+      where['author'] = {
+        username: author,
+      };
+    }
+
+    // Filter by favorited
+    if (favorited) {
+      where['favoritedBy'] = {
+        some: {
+          username: favorited,
+        },
+      };
+    }
+
     const articles = await this.prisma.article.findMany({
+      where,
       include: {
         author: true,
         tags: true,
+        favoritedBy: true,
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: parseInt(limit),
+      skip: parseInt(offset),
     });
 
     const formattedArticles = articles.map((article) => {
@@ -105,6 +140,7 @@ export class ArticleService {
         createdAt: article.createdAt,
         updatedAt: article.updatedAt,
         author: formattedAuthor,
+        favoritesCount: article.favoritedBy.length,
       };
 
       return formattedData;
@@ -433,5 +469,53 @@ export class ArticleService {
     };
 
     return { article: formattedData };
+  }
+
+  async feedArticles(userId: number) {
+    const articles = await this.prisma.article.findMany({
+      where: {
+        author: {
+          followedBy: {
+            some: {
+              id: userId,
+            },
+          },
+        },
+      },
+      include: {
+        tags: true,
+        author: true,
+        favoritedBy: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    const formattedArticles = articles.map((article) => {
+      const formattedAuthor = {
+        username: article.author.username,
+        bio: article.author.bio,
+        image: article.author.image,
+      };
+
+      const formattedData = {
+        slug: article.slug,
+        title: article.title,
+        description: article.description,
+        body: article.body,
+        tagList: article.tags.map((tag) => tag.name),
+        createdAt: article.createdAt,
+        updatedAt: article.updatedAt,
+        author: formattedAuthor,
+        favoritesCount: article.favoritedBy.length,
+      };
+
+      return formattedData;
+    });
+
+    const articlesCount = articles.length;
+
+    return { articles: formattedArticles, articlesCount };
   }
 }
