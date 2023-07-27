@@ -9,6 +9,17 @@ export class ArticleService {
 
   async createArticle(userId: number, dto: CreateArticleDto) {
     const slug = slugify(dto.title, { lower: true });
+
+    const tags = await Promise.all(
+      dto.tagList.map((name) =>
+        this.prisma.tag.upsert({
+          where: { name },
+          create: { name },
+          update: { name },
+        }),
+      ),
+    );
+
     const article = await this.prisma.article.create({
       data: {
         slug,
@@ -16,9 +27,7 @@ export class ArticleService {
           connect: { id: userId },
         },
         tags: {
-          create: dto.tagList.map((name) => ({
-            name,
-          })),
+          connect: tags.map((tag) => ({ id: tag.id })),
         },
         title: dto.title,
         description: dto.description,

@@ -10,7 +10,6 @@ export class TagService {
       select: {
         name: true,
       },
-      distinct: ['name'],
     });
     return { tags: tags };
   }
