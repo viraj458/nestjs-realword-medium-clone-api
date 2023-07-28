@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -13,7 +18,7 @@ export class ProfileService {
     });
 
     if (!profile) {
-      throw new ForbiddenException('Can not find the user');
+      throw new NotFoundException('Can not find the user');
     }
     const user = await this.prisma.user.findUnique({
       where: {
@@ -55,14 +60,14 @@ export class ProfileService {
       },
     });
     if (!userToFollow) {
-      throw new ForbiddenException('No user with that username');
+      throw new NotFoundException('No user with that username');
     }
 
     const followingUser = user.following.some(
       (user) => user.username.toLowerCase() === username.toLowerCase(),
     );
     if (followingUser) {
-      throw new ForbiddenException('already following the user!!');
+      throw new ConflictException('already following the user!!');
     }
 
     await this.prisma.user.update({

@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateArticleDto, CreateCommentDto, UpdateArticleDto } from './dto';
 import slugify from 'slugify';
@@ -8,7 +13,17 @@ export class ArticleService {
   constructor(private prisma: PrismaService) {}
 
   async createArticle(userId: number, dto: CreateArticleDto) {
-    const slug = slugify(dto.title, { lower: true });
+    let slug = slugify(dto.title, {
+      lower: true,
+      remove: /[^a-zA-Z0-9\s]/g,
+      replacement: '-',
+    });
+    const slugExists = await this.prisma.article.findFirst({
+      where: { slug },
+    });
+    if (slugExists) {
+      slug = `${slug}-${Math.floor(Math.random() * 1000000)}`;
+    }
 
     const tags = await Promise.all(
       dto.tagList.map((name) =>
@@ -36,8 +51,12 @@ export class ArticleService {
       include: {
         author: true,
         tags: true,
+        favoritedBy: true,
       },
     });
+
+    const favoriteCount = article.favoritedBy.length;
+    const isFavorited = favoriteCount > 0 ? true : false;
 
     const formattedAuthor = {
       username: article.author.username,
@@ -54,6 +73,8 @@ export class ArticleService {
       createdAt: article.createdAt,
       updatedAt: article.updatedAt,
       author: formattedAuthor,
+      favorited: isFavorited,
+      favoritesCount: favoriteCount,
     };
 
     return { article: formattedData };
@@ -67,8 +88,16 @@ export class ArticleService {
       include: {
         author: true,
         tags: true,
+        favoritedBy: true,
       },
     });
+
+    if (!article) {
+      throw new NotFoundException('Article can not be found!');
+    }
+
+    const favoriteCount = article.favoritedBy.length;
+    const isFavorited = favoriteCount > 0 ? true : false;
 
     const formattedAuthor = {
       username: article.author.username,
@@ -85,6 +114,8 @@ export class ArticleService {
       createdAt: article.createdAt,
       updatedAt: article.updatedAt,
       author: formattedAuthor,
+      favorited: isFavorited,
+      favoritesCount: favoriteCount,
     };
 
     return { article: formattedData };
@@ -167,8 +198,11 @@ export class ArticleService {
       },
     });
 
-    if (!article || article.authorId !== userId) {
-      throw new ForbiddenException('Access denied!!!');
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+    if (article.authorId !== userId) {
+      throw new ForbiddenException('Can not allow!!!');
     }
 
     await this.prisma.article.delete({
@@ -191,8 +225,11 @@ export class ArticleService {
       },
     });
 
-    if (!article || article.authorId !== userId) {
-      throw new ForbiddenException('Access denied!!!');
+    if (article.authorId !== userId) {
+      throw new ForbiddenException('Access denied!!');
+    }
+    if (!article) {
+      throw new NotFoundException('Article not found');
     }
 
     const existingTagNames = article.tags.map((tag) => tag.name);
@@ -261,7 +298,9 @@ export class ArticleService {
         slug,
       },
     });
-    if (!article) throw new ForbiddenException('Cannot find the article!!');
+    if (!article) {
+      throw new NotFoundException('Cannot find the article');
+    }
 
     const comment = await this.prisma.comment.create({
       data: {
@@ -300,7 +339,7 @@ export class ArticleService {
         slug,
       },
     });
-    if (!article) throw new ForbiddenException('Cannot find the article!!');
+    if (!article) throw new NotFoundException('Cannot find the article!!');
 
     const comments = await this.prisma.comment.findMany({
       where: {
@@ -341,11 +380,11 @@ export class ArticleService {
       },
     });
 
-    if (!comment) throw new ForbiddenException('Cannot find the comment!!');
+    if (!comment) throw new NotFoundException('Cannot find the comment!!');
 
     if (comment.authorId !== userId) {
       throw new ForbiddenException(
-        'You are not authorized to delete this comment.',
+        'You are not allowed to delete this comment.',
       );
     }
     await this.prisma.comment.delete({
@@ -367,13 +406,13 @@ export class ArticleService {
       },
     });
 
-    if (!article) throw new ForbiddenException('Can not find article!');
+    if (!article) throw new NotFoundException('Can not find article!');
 
     const checkFavorite = article.favoritedBy.find(
       (user) => user.id === userId,
     );
     if (checkFavorite) {
-      throw new ForbiddenException('Article already in favorites!!');
+      throw new ConflictException('Article is already in favorites');
     }
     const favoritearticle = await this.prisma.article.update({
       where: {
@@ -427,13 +466,13 @@ export class ArticleService {
       },
     });
 
-    if (!article) throw new ForbiddenException('Can not find article!');
+    if (!article) throw new NotFoundException('Can not find article!');
 
     const checkFavorite = article.favoritedBy.find(
       (user) => user.id === userId,
     );
     if (!checkFavorite) {
-      throw new ForbiddenException(
+      throw new NotFoundException(
         'Can not find the article in your favorites!!',
       );
     }
