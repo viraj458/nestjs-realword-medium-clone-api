@@ -5,17 +5,33 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ProfileService {
   constructor(private prisma: PrismaService) {}
 
-  async getProfile(username: string) {
-    const profile = await this.prisma.user.findFirst({
+  async getProfile(username: string, userId: number) {
+    const profile = await this.prisma.user.findUnique({
       where: {
         username,
       },
     });
 
+    if (!profile) {
+      throw new ForbiddenException('Can not find the user');
+    }
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        following: true,
+      },
+    });
+    const isFollowing = user.following.some(
+      (user) => user.username.toLowerCase() === username.toLowerCase(),
+    );
+
     const formattedProfile = {
       username: profile.username,
       bio: profile.bio,
       image: profile.image,
+      following: isFollowing,
     };
     return { profile: formattedProfile };
   }
@@ -29,19 +45,21 @@ export class ProfileService {
         following: true,
       },
     });
+    if (user.username.toLowerCase() === username.toLowerCase()) {
+      throw new ForbiddenException('Can not follow userself!');
+    }
 
     const userToFollow = await this.prisma.user.findUnique({
       where: {
         username,
       },
     });
-
     if (!userToFollow) {
-      throw new ForbiddenException('User not found');
+      throw new ForbiddenException('No user with that username');
     }
 
-    const followingUser = user.following.find(
-      (user) => user.username === username,
+    const followingUser = user.following.some(
+      (user) => user.username.toLowerCase() === username.toLowerCase(),
     );
     if (followingUser) {
       throw new ForbiddenException('already following the user!!');
@@ -80,10 +98,17 @@ export class ProfileService {
       },
     });
 
-    const followingUser = user.following.find(
-      (user) => user.username === username,
-    );
+    const followingUser = await this.prisma.user.findUnique({
+      where: { username },
+    });
     if (!followingUser) {
+      throw new ForbiddenException('No user with that username');
+    }
+
+    const isFollowingUser = user.following.some((user) => {
+      return user.username.toLowerCase() === username.toLowerCase();
+    });
+    if (!isFollowingUser) {
       throw new ForbiddenException('User not in the following list');
     }
 

@@ -7,17 +7,21 @@ import { EditUserDto } from './dto';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  getCurrentUser(user: User) {
+  getCurrentUser(user: User, request: Request) {
+    const token = request.headers['authorization'].split(' ')[1];
+
     const formattedUser = {
       email: user.email,
       username: user.username,
       bio: user.bio,
       image: user.image,
+      token,
     };
     return { user: formattedUser };
   }
 
-  async editUser(userId: number, dto: EditUserDto) {
+  async editUser(userId: number, dto: EditUserDto, request: Request) {
+    const token = request.headers['authorization'].split(' ')[1];
     const user = await this.prisma.user.update({
       where: {
         id: userId,
@@ -32,6 +36,7 @@ export class UserService {
       username: user.username,
       bio: user.bio,
       image: user.image,
+      token,
     };
 
     return { user: formattedUser };

@@ -18,8 +18,11 @@ export class ProfileController {
 
   @UseGuards(OptionalAuthGuard)
   @Get(':username')
-  getProfile(@Param('username') username: string) {
-    return this.profileService.getProfile(username);
+  getProfile(
+    @Param('username') username: string,
+    @GetUser('id') userId: number,
+  ) {
+    return this.profileService.getProfile(username, userId);
   }
 
   @HttpCode(HttpStatus.OK)
