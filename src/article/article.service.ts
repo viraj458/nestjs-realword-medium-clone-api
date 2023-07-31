@@ -7,11 +7,13 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateArticleDto, CreateCommentDto, UpdateArticleDto } from './dto';
 import slugify from 'slugify';
+import { formatArticle, formatComment } from './utils/index';
 
 @Injectable()
 export class ArticleService {
   constructor(private prisma: PrismaService) {}
 
+  //Create a article
   async createArticle(userId: number, dto: CreateArticleDto) {
     let slug = slugify(dto.title, {
       lower: true,
@@ -55,31 +57,10 @@ export class ArticleService {
       },
     });
 
-    const favoriteCount = article.favoritedBy.length;
-    const isFavorited = favoriteCount > 0 ? true : false;
-
-    const formattedAuthor = {
-      username: article.author.username,
-      bio: article.author.bio,
-      image: article.author.image,
-    };
-
-    const formattedData = {
-      slug: article.slug,
-      title: article.title,
-      description: article.description,
-      body: article.body,
-      tagList: article.tags,
-      createdAt: article.createdAt,
-      updatedAt: article.updatedAt,
-      author: formattedAuthor,
-      favorited: isFavorited,
-      favoritesCount: favoriteCount,
-    };
-
-    return { article: formattedData };
+    return { article: formatArticle(article) };
   }
 
+  //Get a single article
   async getArticle(slug: string) {
     const article = await this.prisma.article.findUnique({
       where: {
@@ -96,31 +77,10 @@ export class ArticleService {
       throw new NotFoundException('Article can not be found!');
     }
 
-    const favoriteCount = article.favoritedBy.length;
-    const isFavorited = favoriteCount > 0 ? true : false;
-
-    const formattedAuthor = {
-      username: article.author.username,
-      bio: article.author.bio,
-      image: article.author.image,
-    };
-
-    const formattedData = {
-      slug: article.slug,
-      title: article.title,
-      description: article.description,
-      body: article.body,
-      tagList: article.tags,
-      createdAt: article.createdAt,
-      updatedAt: article.updatedAt,
-      author: formattedAuthor,
-      favorited: isFavorited,
-      favoritesCount: favoriteCount,
-    };
-
-    return { article: formattedData };
+    return { article: formatArticle(article) };
   }
 
+  //Get multiple articles based on tag, author, favorited
   async getArticles(query: any) {
     const { tag, author, favorited, limit = 20, offset = 0 } = query;
     const where = {};
@@ -164,33 +124,14 @@ export class ArticleService {
       skip: parseInt(offset),
     });
 
-    const formattedArticles = articles.map((article) => {
-      const formattedAuthor = {
-        username: article.author.username,
-        bio: article.author.bio,
-        image: article.author.image,
-      };
-
-      const formattedData = {
-        slug: article.slug,
-        title: article.title,
-        description: article.description,
-        body: article.body,
-        tagList: article.tags.map((tag) => tag.name),
-        createdAt: article.createdAt,
-        updatedAt: article.updatedAt,
-        author: formattedAuthor,
-        favoritesCount: article.favoritedBy.length,
-      };
-
-      return formattedData;
-    });
+    const formattedArticles = articles.map((article) => formatArticle(article));
 
     const articlesCount = articles.length;
 
     return { articles: formattedArticles, articlesCount };
   }
 
+  //Delete single article
   async deleteArticle(slug: string, userId: number) {
     const article = await this.prisma.article.findUnique({
       where: {
@@ -214,6 +155,7 @@ export class ArticleService {
     return 'Article deleted!!';
   }
 
+  //Update single article
   async updateArticle(slug: string, userId: number, dto: UpdateArticleDto) {
     const article = await this.prisma.article.findUnique({
       where: {
@@ -259,6 +201,7 @@ export class ArticleService {
       include: {
         author: true,
         tags: true,
+        favoritedBy: true,
       },
     });
 
@@ -272,26 +215,10 @@ export class ArticleService {
       });
     }
 
-    const formattedAuthor = {
-      username: updated.author.username,
-      bio: updated.author.bio,
-      image: updated.author.image,
-    };
-
-    const formattedData = {
-      slug: updated.slug,
-      title: updated.title,
-      description: updated.description,
-      tagList: updated.tags.map((tag) => tag.name),
-      body: updated.body,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
-      author: formattedAuthor,
-    };
-
-    return { article: formattedData };
+    return { article: formatArticle(updated) };
   }
 
+  //Add a comment to a article
   async addComment(dto: CreateCommentDto, slug: string, userId: number) {
     const article = await this.prisma.article.findUnique({
       where: {
@@ -317,22 +244,10 @@ export class ArticleService {
       },
     });
 
-    const formattedAuthor = {
-      username: comment.author.username,
-      bio: comment.author.bio,
-      image: comment.author.image,
-    };
-
-    const formattedData = {
-      id: comment.id,
-      createdAt: comment.createdAt,
-      updatedAt: comment.updatedAt,
-      body: comment.body,
-      author: formattedAuthor,
-    };
-    return { comment: formattedData };
+    return { comment: formatComment(comment) };
   }
 
+  //Get multiple comments by article slug
   async getComments(slug: string) {
     const article = await this.prisma.article.findUnique({
       where: {
@@ -353,26 +268,11 @@ export class ArticleService {
       },
     });
 
-    const formattedComments = comments.map((comment) => {
-      const formattedAuthor = {
-        username: comment.author.username,
-        bio: comment.author.bio,
-        image: comment.author.image,
-      };
-
-      const formattedData = {
-        id: comment.id,
-        createdAt: comment.createdAt,
-        updatedAt: comment.updatedAt,
-        body: comment.body,
-        author: formattedAuthor,
-      };
-
-      return formattedData;
-    });
+    const formattedComments = comments.map((comment) => formatComment(comment));
     return { comments: formattedComments };
   }
 
+  //Delete single comment
   async deleteComment(commentId: number, userId: number) {
     const comment = await this.prisma.comment.findUnique({
       where: {
@@ -396,6 +296,7 @@ export class ArticleService {
     return 'Comment deleted!!';
   }
 
+  //Set a article as a favorite
   async favoriteArticle(slug: string, userId: number) {
     const article = await this.prisma.article.findUnique({
       where: {
@@ -432,30 +333,10 @@ export class ArticleService {
       },
     });
 
-    const favoriteCount = favoritearticle.favoritedBy.length;
-
-    const formattedAuthor = {
-      username: favoritearticle.author.username,
-      bio: favoritearticle.author.bio,
-      image: favoritearticle.author.image,
-    };
-
-    const formattedData = {
-      slug: favoritearticle.slug,
-      title: favoritearticle.title,
-      description: favoritearticle.description,
-      body: favoritearticle.body,
-      tagList: favoritearticle.tags,
-      createdAt: favoritearticle.createdAt,
-      updatedAt: favoritearticle.updatedAt,
-      author: formattedAuthor,
-      favorited: true,
-      favoritesCount: favoriteCount,
-    };
-
-    return { article: formattedData };
+    return { article: formatArticle(favoritearticle) };
   }
 
+  //Set a existing favorite article as a unfavorite
   async unFavoriteArticle(slug: string, userId: number) {
     const article = await this.prisma.article.findUnique({
       where: {
@@ -495,31 +376,12 @@ export class ArticleService {
       },
     });
 
-    const favoriteCount = unFavoritearticle.favoritedBy.length;
-
-    const formattedAuthor = {
-      username: unFavoritearticle.author.username,
-      bio: unFavoritearticle.author.bio,
-      image: unFavoritearticle.author.image,
-    };
-
-    const formattedData = {
-      slug: unFavoritearticle.slug,
-      title: unFavoritearticle.title,
-      description: unFavoritearticle.description,
-      body: unFavoritearticle.body,
-      tagList: unFavoritearticle.tags,
-      createdAt: unFavoritearticle.createdAt,
-      updatedAt: unFavoritearticle.updatedAt,
-      author: formattedAuthor,
-      favorited: false,
-      favoritesCount: favoriteCount,
-    };
-
-    return { article: formattedData };
+    return { article: formatArticle(unFavoritearticle) };
   }
 
-  async feedArticles(userId: number) {
+  //Get multiple articles created by followed users, ordered by most recent first
+  async feedArticles(userId: number, query: any) {
+    const { limit = 20, offset = 0 } = query;
     const articles = await this.prisma.article.findMany({
       where: {
         author: {
@@ -538,32 +400,13 @@ export class ArticleService {
       orderBy: {
         updatedAt: 'desc',
       },
+      take: parseInt(limit),
+      skip: parseInt(offset),
     });
 
-    const formattedArticles = articles.map((article) => {
-      const formattedAuthor = {
-        username: article.author.username,
-        bio: article.author.bio,
-        image: article.author.image,
-      };
-
-      const formattedData = {
-        slug: article.slug,
-        title: article.title,
-        description: article.description,
-        body: article.body,
-        tagList: article.tags.map((tag) => tag.name),
-        createdAt: article.createdAt,
-        updatedAt: article.updatedAt,
-        author: formattedAuthor,
-        favoritesCount: article.favoritedBy.length,
-      };
-
-      return formattedData;
-    });
+    const formattedArticles = articles.map((article) => formatArticle(article));
 
     const articlesCount = articles.length;
-
     return { articles: formattedArticles, articlesCount };
   }
 }

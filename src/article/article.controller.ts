@@ -30,8 +30,8 @@ export class ArticleController {
 
   @UseGuards(JwtGuard)
   @Get('feed')
-  feedArticles(@GetUser('id') userId: number) {
-    return this.articleService.feedArticles(userId);
+  feedArticles(@GetUser('id') userId: number, @Query() query: any) {
+    return this.articleService.feedArticles(userId, query);
   }
 
   @Get(':slug')
@@ -39,6 +39,7 @@ export class ArticleController {
     return this.articleService.getArticle(slug);
   }
 
+  @UseGuards(OptionalAuthGuard)
   @Get()
   getArticles(@Query() query: any) {
     return this.articleService.getArticles(query);
