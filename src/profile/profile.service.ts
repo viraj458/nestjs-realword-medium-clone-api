@@ -5,12 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { formatUser } from './utils';
 
 @Injectable()
 export class ProfileService {
   constructor(private prisma: PrismaService) {}
 
-  async getProfile(username: string, userId: number) {
+  //Get a user
+  async getProfile(username: string, userId?: number) {
     const profile = await this.prisma.user.findUnique({
       where: {
         username,
@@ -20,27 +22,30 @@ export class ProfileService {
     if (!profile) {
       throw new NotFoundException('Can not find the user');
     }
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-      include: {
-        following: true,
-      },
-    });
-    const isFollowing = user.following.some(
-      (user) => user.username.toLowerCase() === username.toLowerCase(),
-    );
 
-    const formattedProfile = {
-      username: profile.username,
-      bio: profile.bio,
-      image: profile.image,
-      following: isFollowing,
-    };
-    return { profile: formattedProfile };
+    let isFollowing = false;
+
+    if (userId !== null) {
+      const user = await this.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+        include: {
+          following: true,
+        },
+      });
+      if (user) {
+        isFollowing = user.following.some(
+          (followingUser) =>
+            followingUser.username.toLowerCase() === username.toLowerCase(),
+        );
+      }
+    }
+
+    return { profile: formatUser(profile, isFollowing) };
   }
 
+  //Follower a user
   async followUser(username: string, userId: number) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -83,16 +88,10 @@ export class ProfileService {
       },
     });
 
-    const formattedFollowing = {
-      username: userToFollow.username,
-      bio: userToFollow.bio,
-      image: userToFollow.image,
-      following: true,
-    };
-
-    return { profile: formattedFollowing };
+    return { profile: formatUser(userToFollow, true) };
   }
 
+  //UnFollower a user
   async unFollowUser(username: string, userId: number) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -130,13 +129,6 @@ export class ProfileService {
       },
     });
 
-    const formattedFollowing = {
-      username: followingUser.username,
-      bio: followingUser.bio,
-      image: followingUser.image,
-      following: false,
-    };
-
-    return { profile: formattedFollowing };
+    return { profile: formatUser(followingUser, false) };
   }
 }

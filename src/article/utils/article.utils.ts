@@ -1,15 +1,26 @@
-export function formatAuthor(author: any) {
+export function formatAuthor(author: any, userId?: number) {
+  const isFollowing =
+    userId !== null
+      ? author.following.some((user) => {
+          return user.id === userId;
+        })
+      : false;
+
   return {
     username: author.username,
     bio: author.bio,
     image: author.image,
+    following: isFollowing,
   };
 }
 
-export function formatArticle(article: any) {
+export function formatArticle(article: any, userId?: number) {
   const favoriteCount = article.favoritedBy.length;
-  const isFavorited = favoriteCount > 0;
-  const formattedAuthor = formatAuthor(article.author);
+  const isFavorited =
+    userId !== null
+      ? article.favoritedBy.some((user) => user.id === userId)
+      : false;
+  const formattedAuthor = formatAuthor(article.author, userId);
   const formattedTags = article.tags.map((tag: any) => tag.name);
 
   return {
@@ -26,8 +37,8 @@ export function formatArticle(article: any) {
   };
 }
 
-export function formatComment(comment: any) {
-  const formattedAuthor = formatAuthor(comment.author);
+export function formatComment(comment: any, userId?: number) {
+  const formattedAuthor = formatAuthor(comment.author, userId);
 
   return {
     id: comment.id,

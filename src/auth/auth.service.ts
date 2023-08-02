@@ -5,6 +5,7 @@ import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { formatUser } from './auth.utils.ts';
 
 @Injectable()
 export class AuthService {
@@ -29,16 +30,7 @@ export class AuthService {
 
       const token = await this.signToken(user.id, user.email);
 
-      const formattedUser = {
-        user: {
-          email: user.email,
-          token,
-          username: user.username,
-          bio: user.bio,
-          image: user.image,
-        },
-      };
-      return formattedUser;
+      return { user: formatUser(user, token) };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002')
@@ -64,16 +56,7 @@ export class AuthService {
 
     const token = await this.signToken(user.id, user.email);
 
-    const formattedUser = {
-      user: {
-        email: user.email,
-        token,
-        username: user.username,
-        bio: user.bio,
-        image: user.image,
-      },
-    };
-    return formattedUser;
+    return { user: formatUser(user, token) };
   }
 
   signToken(userId: number, email: string): Promise<string> {

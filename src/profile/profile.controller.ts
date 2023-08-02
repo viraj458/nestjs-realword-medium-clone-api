@@ -16,15 +16,14 @@ import { GetUser } from '../user/decorator';
 export class ProfileController {
   constructor(private profileService: ProfileService) {}
 
+  //Get user profile
   @UseGuards(OptionalAuthGuard)
   @Get(':username')
-  getProfile(
-    @Param('username') username: string,
-    @GetUser('id') userId: number,
-  ) {
+  getProfile(@Param('username') username: string, @GetUser() userId?: number) {
     return this.profileService.getProfile(username, userId);
   }
 
+  //Follow user profile
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtGuard)
   @Post(':username/follow')
@@ -35,6 +34,7 @@ export class ProfileController {
     return this.profileService.followUser(username, userId);
   }
 
+  //UnFollow user profile
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtGuard)
   @Delete(':username/follow')

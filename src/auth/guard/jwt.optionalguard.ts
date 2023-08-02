@@ -8,6 +8,6 @@ export class OptionalAuthGuard extends AuthGuard('jwt') {
     if (err || !user) {
       return null;
     }
-    return user;
+    return user.id;
   }
 }

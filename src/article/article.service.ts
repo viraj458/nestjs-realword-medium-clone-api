@@ -51,13 +51,17 @@ export class ArticleService {
         body: dto.body,
       },
       include: {
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
         tags: true,
         favoritedBy: true,
       },
     });
 
-    return { article: formatArticle(article) };
+    return { article: formatArticle(article, userId) };
   }
 
   //Get a single article
@@ -67,7 +71,11 @@ export class ArticleService {
         slug,
       },
       include: {
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
         tags: true,
         favoritedBy: true,
       },
@@ -81,7 +89,7 @@ export class ArticleService {
   }
 
   //Get multiple articles based on tag, author, favorited
-  async getArticles(query: any) {
+  async getArticles(query: any, userId: number) {
     const { tag, author, favorited, limit = 20, offset = 0 } = query;
     const where = {};
 
@@ -113,7 +121,11 @@ export class ArticleService {
     const articles = await this.prisma.article.findMany({
       where,
       include: {
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
         tags: true,
         favoritedBy: true,
       },
@@ -124,7 +136,9 @@ export class ArticleService {
       skip: parseInt(offset),
     });
 
-    const formattedArticles = articles.map((article) => formatArticle(article));
+    const formattedArticles = articles.map((article) =>
+      formatArticle(article, userId),
+    );
 
     const articlesCount = articles.length;
 
@@ -163,7 +177,11 @@ export class ArticleService {
       },
       include: {
         tags: true,
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
       },
     });
 
@@ -199,7 +217,11 @@ export class ArticleService {
         },
       },
       include: {
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
         tags: true,
         favoritedBy: true,
       },
@@ -215,7 +237,7 @@ export class ArticleService {
       });
     }
 
-    return { article: formatArticle(updated) };
+    return { article: formatArticle(updated, userId) };
   }
 
   //Add a comment to a article
@@ -240,15 +262,19 @@ export class ArticleService {
         },
       },
       include: {
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
       },
     });
 
-    return { comment: formatComment(comment) };
+    return { comment: formatComment(comment, userId) };
   }
 
   //Get multiple comments by article slug
-  async getComments(slug: string) {
+  async getComments(slug: string, userId?: number) {
     const article = await this.prisma.article.findUnique({
       where: {
         slug,
@@ -264,11 +290,17 @@ export class ArticleService {
         createdAt: 'desc',
       },
       include: {
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
       },
     });
 
-    const formattedComments = comments.map((comment) => formatComment(comment));
+    const formattedComments = comments.map((comment) =>
+      formatComment(comment, userId),
+    );
     return { comments: formattedComments };
   }
 
@@ -328,12 +360,16 @@ export class ArticleService {
       },
       include: {
         tags: true,
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
         favoritedBy: true,
       },
     });
 
-    return { article: formatArticle(favoritearticle) };
+    return { article: formatArticle(favoritearticle, userId) };
   }
 
   //Set a existing favorite article as a unfavorite
@@ -371,12 +407,16 @@ export class ArticleService {
       },
       include: {
         tags: true,
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
         favoritedBy: true,
       },
     });
 
-    return { article: formatArticle(unFavoritearticle) };
+    return { article: formatArticle(unFavoritearticle, userId) };
   }
 
   //Get multiple articles created by followed users, ordered by most recent first
@@ -394,7 +434,11 @@ export class ArticleService {
       },
       include: {
         tags: true,
-        author: true,
+        author: {
+          include: {
+            following: true,
+          },
+        },
         favoritedBy: true,
       },
       orderBy: {
@@ -404,7 +448,9 @@ export class ArticleService {
       skip: parseInt(offset),
     });
 
-    const formattedArticles = articles.map((article) => formatArticle(article));
+    const formattedArticles = articles.map((article) =>
+      formatArticle(article, userId),
+    );
 
     const articlesCount = articles.length;
     return { articles: formattedArticles, articlesCount };

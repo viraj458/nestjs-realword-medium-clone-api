@@ -41,13 +41,13 @@ export class ArticleController {
 
   @UseGuards(OptionalAuthGuard)
   @Get()
-  getArticles(@Query() query: any) {
-    return this.articleService.getArticles(query);
+  getArticles(@Query() query: any, @GetUser() userId: number) {
+    return this.articleService.getArticles(query, userId);
   }
 
   @UseGuards(JwtGuard)
   @Delete(':slug')
-  deleteArticle(@Param('slug') slug: string, @GetUser('id') userId: number) {
+  deleteArticle(@Param('slug') slug: string, @GetUser() userId: number) {
     return this.articleService.deleteArticle(slug, userId);
   }
 
@@ -73,8 +73,8 @@ export class ArticleController {
 
   @UseGuards(OptionalAuthGuard)
   @Get(':slug/comments')
-  getComments(@Param('slug') slug: string) {
-    return this.articleService.getComments(slug);
+  getComments(@Param('slug') slug: string, @GetUser() userId: number) {
+    return this.articleService.getComments(slug, userId);
   }
 
   @UseGuards(JwtGuard)
